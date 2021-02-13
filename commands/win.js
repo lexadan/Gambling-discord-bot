@@ -1,11 +1,13 @@
 const log = require('../Tools/logs');
 const redis = require('../Tools/redis');
 const config = require("../config.json");
+const replies = require('../replies');
+
 
 async function deletePredict(message) {
 	let author = await redis.get('predictAuthor');
 	if (author != message.author.id) {
-		message.reply('Touche à ton cul', {
+		message.reply(replies.PredictDeleteWrongAuthor, {
 			tts: config.bet.tts,
 		});
 		return;
@@ -33,6 +35,7 @@ async function declareWinner(client, winner, message) {
 			bet: winnersSplit[1]
 		});
 	});
+	log.info(`Winners are : ${winners}`);
 	let totalBet = await redis.get('totalBet');
 	let propBet = await redis.get(`prop${winner}`);
 	let cote = totalBet / propBet;
@@ -41,9 +44,10 @@ async function declareWinner(client, winner, message) {
 		let gain = element.bet * cote;
 		await redis.incrby(element.id, gain);
 		let user = await channel.members.find(e => e.id == element.id);
-		channel.send(`${user.user.username} à gagné ${gain} grace à sa vision de jeu`);
+		channel.send(replies.Winner(user.user.username, gain, config.bet.name), {
+			tts: config.bet.tts,
+		});
 	});
-	console.log(winners);
 }
 module.exports = {
 	name: "win",
@@ -51,8 +55,8 @@ module.exports = {
 	async run(client, message, args) {
 		log.info(`${message.author.username} try to validate a prediction`);
 		if (args.lenght != 1) {
-			log.error(`Invalid arguments for win`);
-			message.reply(`⚙️ Les paramètres sont invalides !\n //win <Vainqueur>⚙️`, {
+			log.ko(`Invalid arguments for win`);
+			message.reply(replies.WinInvalidArguments, {
 				tts: config.bet.tts,
 			});
 			return;
@@ -65,7 +69,10 @@ module.exports = {
 		}
 		let totalBet = await redis.get(`prop${winner}`);
 		let props = await redis.zrange('props', 0, 5);
-		message.reply(`And the winner is ${props[winner - 1]} with a total of ${totalBet} ${config.bet.name}`);
+		log.info(`Prop number : ${winner} win the prediction with a totalBet of ${totalBet}`);
+		message.reply(replies.WinningChoice(props[winner - 1], totalBet, config.bet.name), {
+			tts: config.bet.tts,
+		});
 		await declareWinner(client, winner, message);
 		deletePredict(message);
 	}

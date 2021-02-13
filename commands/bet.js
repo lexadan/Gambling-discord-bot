@@ -1,6 +1,8 @@
 const log = require('../Tools/logs');
 const redis = require('../Tools/redis');
 const config = require("../config.json");
+const replies = require('../replies');
+
 
 async function placeBet(message, bet, propChoice) {
 	let balance = await redis.get(message.author.id);
@@ -14,7 +16,9 @@ async function placeBet(message, bet, propChoice) {
 		log.info(`Balance found : ${balance}`);
 	}
 	if (balance < bet) {
-		message.reply("Lol retourne chez toi sale gueux t'as pas assez");
+		message.reply(replies.BetInsufisantBalance(config.bet.name), {
+			tts: config.bet.tts,
+		});
 		log.ko(`Not enough found for bet: ${balance}<${bet}`);
 		return;
 	} else {
@@ -22,6 +26,7 @@ async function placeBet(message, bet, propChoice) {
 		redis.incrby('totalBet', bet);
 		redis.incrby(`prop${propChoice}`, bet);
 		redis.lpush(`prop${propChoice}Candidate`, `${message.author.id},${bet}`);
+		log.redis('Bet succesfully placed');
 	}
 }
 
@@ -49,6 +54,7 @@ async function updateMessage(message) {
 				msg.edit(res);
 			});
 		});
+		log.ok(`Prediction message updated`);
 	} catch(err) {
 		log.ko(err);
 	}
@@ -62,7 +68,8 @@ async function checkAlreadyBet(message) {
 		candidate.forEach(element => {
 			let candidateSplit = element.split(",");
 			if (candidateSplit[0] == message.author.id) {
-				message.reply(`T'as déjà voté sale fou !`, {
+				log.ko(`${message.author.username} have already bet`);
+				message.reply(replies.BetAlreadyVoted, {
 					tts: config.bet.tts,
 				});
 				res = false;
@@ -79,7 +86,7 @@ module.exports = {
 		log.info(`${message.author.username} is trying to place a bet`);
 		if (args.lenght != 2) {
 			log.ko('Invalid parameters for bet');
-			message.reply(`⚙️ Les paramètres sont invalides !\n //bet <Numéro choix> <Somme> ⚙️`, {
+			message.reply(replies.BetInvalideArguments, {
 				tts: config.bet.tts,
 			});
 			return;
@@ -87,14 +94,17 @@ module.exports = {
 		let propChoice = +args.at[0];
 		let bet = +args.at[1];
 		let propNbr = await redis.zcount('props', 0, 9);
-		if (propChoice > propNbr || isNaN(bet) || bet < 0) {
-			log.ko('Invalid Parameter for bet');
+		if (propChoice > propNbr)  {
+			log.ko('Invalid Parameter for bet: propChoice');
+			return;
+		}
+		if (isNaN(bet) || bet < 0) {
+			log.ko('Invalid Parameter for bet: Bet');
 			return;
 		}
 		checkAlreadyBet(message).then(bool => {
 			if (bool) {
 				placeBet(message, bet, propChoice);
-				log.ok('Bet succesfully placed');
 				updateMessage(message);
 			}
 		});

@@ -1,6 +1,8 @@
 const log = require('../Tools/logs');
 const redis = require('../Tools/redis');
 const config = require("../config.json");
+const replies = require('../replies');
+
 
 module.exports = {
 	name: "wallet",
@@ -10,14 +12,14 @@ module.exports = {
 		let balance = await redis.get(message.author.id);
 		if (!balance) {
 			log.warning("Author have no balance, default settings applied");
-			message.reply(`Bienvenue sale connard ! Tu commence avec ${config.bet.default_balance} ${config.bet.name}`, {
+			message.reply(replies.WalletDefaultSetting(config.bet.default_balance, config.bet.name), {
 				tts: config.bet.tts,
 			})
 			await redis.set(message.author.id, config.bet.default_balance);
-			log.ok(`Balance for ${message.author.username} have been updated to ${config.bet.default_balance}`);
+			log.redis(`Balance for ${message.author.username} have been updated to ${config.bet.default_balance}`);
 		} else {
 			log.ok(`${message.author.username} has ${balance} points`);
-			message.reply(`Tu as ${balance} ${config.bet.name} bouffon`, {
+			message.reply(replies.WalletDisplay(balance, config.bet.name), {
 				tts: config.bet.tts,
 			});
 		}

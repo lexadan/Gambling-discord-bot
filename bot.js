@@ -7,18 +7,19 @@ const log = require("./Tools/logs");
 
 const { parse } = require ("discord-command-parser");
 const fs = require('fs');
+const replies = require('./replies');
 
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
-const commands = new Map();
+const commandsList = new Map();
 
 for (const file of commandFiles) {
 	const command = require(`./commands/${file}`);
-	commands.set(command.name, command);
+	commandsList.set(command.name, command);
 }
 
 client.on("ready",() => {
 	log.ok(`${client.user.username} is online !`);
-	client.user.setActivity("Arthur mange des chibres de luxe");
+	client.user.setActivity(replies.botActivity);
 });
 
 client.on("message", message => {
@@ -28,12 +29,12 @@ client.on("message", message => {
 		log.error("Parse error");
 		return;
 	}
-	const command = commands.get(parsed.command);
+	const command = commandsList.get(parsed.command);
 	try {
 		command.run(client, message, {at: parsed.arguments, lenght: parsed.arguments.length});
 		message.delete();
 	} catch (err) {
-		log.error(`${err}`);
+		log.error(`Unknown command : ${parsed.command}`);
 	}
 });
 

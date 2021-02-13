@@ -105,3 +105,6 @@ dist
 
 # Credentials
 config.json
+
+#Doc
+out/

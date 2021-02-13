@@ -1,6 +1,8 @@
 const log = require('../Tools/logs');
 const redis = require('../Tools/redis');
 const config = require("../config.json");
+const replies = require('../replies');
+
 
 async function saveBet(redis, predict) {
 	redis.set('predictMessageID', predict.msgId);
@@ -13,9 +15,11 @@ async function saveBet(redis, predict) {
 }
 
 async function deletePredict(message) {
+	log.info(`${message.author.username} is trying to delete current prediction`);
 	let author = await redis.get('predictAuthor');
 	if (author != message.author.id) {
-		message.reply('Touche à ton cul', {
+		log.ko(`Can't delete : Wrong author`);
+		message.reply(replies.PredictDeleteWrongAuthor, {
 			tts: config.bet.tts,
 		});
 		return;
@@ -29,18 +33,19 @@ async function deletePredict(message) {
 		redis.del(`prop${i + 1}`);
 		redis.del(`prop${i + 1}Candidate`);
 	}
-	log.ok('Prediction succesfully deleted');
+	log.redis('Prediction succesfully deleted');
 	return;
 }
 module.exports = {
 	name: "predict",
 	desc: "instanciate a prediction",
 	async run(client, message, args) {
+		log.info(`${message.author.username} is trying to place make a prediction`);
 		if (args.at[0] == "-delete")
 			return deletePredict(message);
 		if (args.lenght < 3) {
 			log.ko(`Invalid Parameter for prediction`);
-			message.reply(`⚙️ Les paramètres sont invalides !\n //predict <Question> <Choix 1>...<Choix 9> ⚙️`, {
+			message.reply(replies.PredictInvalidArguments, {
 				tts: config.bet.tts,
 			});
 			return;
@@ -58,6 +63,6 @@ module.exports = {
 			question: question,
 			propsNbr: args.lenght - 1
 		});
-		log.info(`New prediction with question : ${question} and props : [${props}] by ${message.author.username}`);
+		log.redis(`New prediction with question : ${question} and props : [${props}] by ${message.author.username}`);
 	}
 }
