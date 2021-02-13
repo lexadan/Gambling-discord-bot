@@ -40,7 +40,7 @@ async function declareWinner(client, winner, message) {
 	let propBet = await redis.get(`prop${winner}`);
 	let cote = totalBet / propBet;
 	let channel = await message.channel;
-	winners.forEach(async element => {
+	await winners.forEach(async element => {
 		let gain = element.bet * cote;
 		await redis.incrby(element.id, gain);
 		let user = await channel.members.find(e => e.id == element.id);
@@ -48,6 +48,7 @@ async function declareWinner(client, winner, message) {
 			tts: config.bet.tts,
 		});
 	});
+	deletePredict(message);
 }
 module.exports = {
 	name: "win",
@@ -73,7 +74,6 @@ module.exports = {
 		message.reply(replies.WinningChoice(props[winner - 1], totalBet, config.bet.name), {
 			tts: config.bet.tts,
 		});
-		await declareWinner(client, winner, message);
-		deletePredict(message);
+		declareWinner(client, winner, message);
 	}
 }
