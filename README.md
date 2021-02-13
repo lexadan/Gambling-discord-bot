@@ -50,22 +50,22 @@ Port of the Redis server
 `!wallet`
 **No Argument**
 #### predict | Create a prediction in the server
-`!predict <Question> <Choice1> <Choice2> ...`\n
- `!predict "Git Gud ?" "Yes" "No"`\n
- `!predict -delete`\n
+`!predict <Question> <Choice1> <Choice2> ...`\
+ `!predict "Git Gud ?" "Yes" "No"`\
+ `!predict -delete`\
  **Argument**:
-`Question`: Question of the prediction
-`..Choice`: From 1 to 9 argument, one for each choice available
-`-delete` : Replace question with -delete to delete current prediction
+`Question`: Question of the prediction\
+`..Choice`: From 1 to 9 argument, one for each choice available\
+`-delete` : Replace question with -delete to delete current prediction\
 #### bet | Place a bet for the current prediction
-`!bet <Choice> <bet>`
- `!bet 1 500`
- **Arguments**:
- `Choice`: Choice selected by user
-`bet`: Amount of currency bet by user
+`!bet <Choice> <bet>`\
+ `!bet 1 500`\
+ **Arguments**:\
+ `Choice`: Choice selected by user\
+`bet`: Amount of currency bet by user\
 #### win | Declare winner of the current prediction (author only)
-`!win <choice>`
-`!win 1`
-**Arguments**:
+`!win <choice>`\
+`!win 1`\
+**Arguments**:\
 `winner` : Choice selected to be winner
 
