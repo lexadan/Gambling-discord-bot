@@ -69,3 +69,18 @@ Port of the Redis server\
 **Arguments**:\
 `winner` : Choice selected to be winner
 
+## Replies
+
+All replies can be modified but they have fixed arguments.\
+To change one reply modify it's value in `replies.js`  **But care to not change both name and arguments !!**\
+```js
+exports.WalletDisplay = (balance, name) => 'You have ${balance} ${name} in your balance';
+```
+For example here you can change 
+```js 
+`You have ${balance} ${name} in your balance`;
+``` 
+to 
+```js 
+`${balance} is you new wealth`;
+``` 
