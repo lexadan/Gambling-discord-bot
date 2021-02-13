@@ -1,4 +1,7 @@
 module.exports = {
+	redis: function(log) {
+		console.log('[\x1b[32m%s\x1b[0m]: ' + `${log}`, 'Redis');
+	},
 	info: function(log) {
 		console.log('[\x1b[36m%s\x1b[0m]: ' + `${log}`, 'Info');
 	},

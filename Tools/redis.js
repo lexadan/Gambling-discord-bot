@@ -1,9 +1,13 @@
 const log = require("../Tools/logs");
+const config = require('../config.json');
 const { promisify } = require('util');
 
 const redis = require("redis");
 const { off } = require("process");
-var redisClient = redis.createClient();
+var redisClient = redis.createClient({
+	host: config.redis.host,
+	port: config.redis.port
+});
 
 redisClient.on('connect', function() {
 	log.ok('Redis connected');
