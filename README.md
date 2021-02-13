@@ -50,9 +50,9 @@ Port of the Redis server
 `!wallet`
 **No Argument**
 #### predict | Create a prediction in the server
-`!predict <Question> <Choice1> <Choice2> ...`
- `!predict "Git Gud ?" "Yes" "No"`
- `!predict -delete`
+`!predict <Question> <Choice1> <Choice2> ...`\n
+ `!predict "Git Gud ?" "Yes" "No"`\n
+ `!predict -delete`\n
  **Argument**:
 `Question`: Question of the prediction
 `..Choice`: From 1 to 9 argument, one for each choice available
