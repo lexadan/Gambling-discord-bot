@@ -29,20 +29,20 @@ Note that this bot will only run with a working [Redis](https://redis.io/) serve
 }
 ```
 
-**Token**
-Get you token on [Discord Developer Portal](https://discord.com/developers/docs/intro), and replace the placeholder with it.
-**Prefix**
-Bot Prefix, if a message doesn't start with prefix he will not be treated.
-**Bet:Default Balance**
-Number of currency given for the first time of any user
-**Bet:Name**
-Name of the currency (can be Emoji)
-**Bet:TTS**
-I true the Text to Speech will be enable and all reply or message will be enunciate by discord.
-**Redis:Host** 
-Host address of the Redis server
-**Redis:Port**
-Port of the Redis server
+**Token**\
+Get you token on [Discord Developer Portal](https://discord.com/developers/docs/intro), and replace the placeholder with it.\
+**Prefix**\
+Bot Prefix, if a message doesn't start with prefix he will not be treated.\
+**Bet:Default Balance**\
+Number of currency given for the first time of any user\
+**Bet:Name**\
+Name of the currency (can be Emoji)\
+**Bet:TTS**\
+I true the Text to Speech will be enable and all reply or message will be enunciate by discord.\
+**Redis:Host** \
+Host address of the Redis server\
+**Redis:Port**\
+Port of the Redis server\
 
 ## Commands
 
