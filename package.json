@@ -1,0 +1,29 @@
+{
+  "name": "prediction-bot",
+  "version": "1.0.0",
+  "description": "Discord bot that try to reproduce the bet system of Twitch.",
+  "main": "bot.js",
+  "dependencies": {
+    "discord-command-parser": "^1.5.3",
+    "discord.js": "^12.5.1",
+    "ffmpeg": "^0.0.4",
+    "fluent-ffmpeg": "^2.1.2",
+    "redis": "^3.0.2",
+    "util": "^0.12.3",
+    "ytdl-core": "^3.4.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lexadan/Prediction-bot.git"
+  },
+  "author": "Corentin Renard",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lexadan/Prediction-bot/issues"
+  },
+  "homepage": "https://github.com/lexadan/Prediction-bot#readme"
+}
