@@ -2,16 +2,18 @@ const log = require('../Tools/logs');
 const redis = require('../Tools/redis');
 const config = require("../config.json");
 const replies = require('../replies');
+const Discord = require("discord.js");
+const {progressBar} = require("../Tools/progressBar");
 
 
-async function saveBet(redis, predict) {
-	redis.set('predictMessageID', predict.msgId);
-	redis.set('predictAuthor', predict.author);
-	redis.set('predictQuestion', predict.question);
+async function saveBet(redis, message, predict) {
+	await redis.set('predictAuthor', predict.author);
+	await redis.set('predictQuestion', predict.question);
 	for (let i = 0; i < predict.propsNbr; i++) {
-		redis.set(`prop${i+1}`, 0);
-		redis.zadd('props', i+1, predict.props[i]);
+		await redis.set(`prop${i+1}`, 0);
+		await redis.zadd('props', i+1, predict.props[i]);
 	}
+	msgCtor(message);
 }
 
 async function deletePredict(message) {
@@ -36,6 +38,26 @@ async function deletePredict(message) {
 	log.redis('Prediction succesfully deleted');
 	return;
 }
+
+async function msgCtor(message) {
+	let Embed = new Discord.MessageEmbed();
+	Embed.setColor("#0099ff").setTitle("Prediction !");
+
+	let totalBet = await redis.get('totalBet');
+	let question = await redis.get('predictQuestion');
+	Embed.setDescription(question);	
+	let props = await redis.zrange('props', 0, 5);
+	let lenght = await redis.zcount('props', 0, 5);
+	for (let i = 0; i < lenght; i++) {
+		let bet = await redis.get(`prop${i + 1}`);
+		let cote = (bet == 0) ? (0) : (totalBet/bet)
+		let progressbar = progressBar(0, 1, 15);
+		Embed.addField(`${i + 1}) ${props[i]}`, `${progressbar} ${bet} ${config.bet.name} (1:${cote})`);
+	}
+	let msg = await message.channel.send(Embed);
+	await redis.set('predictMessageID', msg.id);
+}
+
 module.exports = {
 	name: "predict",
 	desc: "instanciate a prediction",
@@ -52,12 +74,10 @@ module.exports = {
 		}
 		const question = args.at[0];
 		const props = args.at.splice(1);
-		let betMsg = `Question : ${question}\n`;
+		/* let betMsg = `Question : ${question}\n`;
 		for (let i = 0; i < args.lenght - 1; i++)
-			betMsg += `\t${i + 1}) ${props[i]}\n`;
-		let msg = await message.channel.send(betMsg);
-		saveBet(redis, {
-			msgId: msg.id,
+			betMsg += `\t${i + 1}) ${props[i]}\n`; */
+		saveBet(redis, message, {
 			author: message.author.id,
 			props: props,
 			question: question,

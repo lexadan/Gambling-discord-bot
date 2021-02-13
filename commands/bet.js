@@ -2,6 +2,8 @@ const log = require('../Tools/logs');
 const redis = require('../Tools/redis');
 const config = require("../config.json");
 const replies = require('../replies');
+const Discord = require("discord.js");
+const {progressBar} = require("../Tools/progressBar");
 
 
 async function placeBet(message, bet, propChoice) {
@@ -31,19 +33,24 @@ async function placeBet(message, bet, propChoice) {
 }
 
 async function msgCtor() {
+	let Embed = new Discord.MessageEmbed();
+	Embed.setColor("#0099ff").setTitle("Prediction !");
 	let msg = "Question : ";
 
 	let totalBet = await redis.get('totalBet');
 	let question = await redis.get('predictQuestion');
 	msg += `${question}\n`;
+	Embed.setDescription(question);	
 	let props = await redis.zrange('props', 0, 5);
 	let lenght = await redis.zcount('props', 0, 5);
 	for (let i = 0; i < lenght; i++) {
 		let bet = await redis.get(`prop${i + 1}`);
 		let cote = (bet == 0) ? (0) : (totalBet/bet)
-		msg += `\t${i + 1}) ${props[i]}\t ${bet} ${config.bet.name} (1:${cote})\n`;
+		let progressbar = progressBar(bet/totalBet, 1, 15);
+		Embed.addField(`${i + 1}) ${props[i]}`, `${progressbar} ${bet} ${config.bet.name} (1:${cote})`);
+		msg += `\t${i + 1}) ${props[i]}\t ${bet} ${config.bet.name} (1:${cote.toPrecision(2)})\n`;
 	}
-	return msg;
+	return Embed;
 }
 
 async function updateMessage(message) {
