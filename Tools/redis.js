@@ -36,6 +36,15 @@ ZRANGE_ASYNC = promisify(redisClient.zrange).bind(redisClient);
 LPUSH_ASYNC = promisify(redisClient.lpush).bind(redisClient);
 LRANGE_ASYNC = promisify(redisClient.lrange).bind(redisClient);
 
+//hashes
+HMSET_ASYNC = promisify(redisClient.hmset).bind(redisClient);
+HSET_ASYNC = promisify(redisClient.hset).bind(redisClient);
+HGETALL_ASYNC = promisify(redisClient.hgetall).bind(redisClient);
+
+//set
+SADD_ASYNC = promisify(redisClient.sadd).bind(redisClient);
+SMEMBERS_ASYNC = promisify(redisClient.smembers).bind(redisClient);
+SCARD_ASYNC = promisify(redisClient.scard).bind(redisClient);
 module.exports = {
 	async get(key) {
 		return await GET_ASYNC(key);
@@ -69,5 +78,23 @@ module.exports = {
 	},
 	async lrange(key, min, max) {
 		return await LRANGE_ASYNC(key, min, max);
+	},
+	async hmset(key, obj) {
+		return await HMSET_ASYNC(key, obj);
+	},
+	async hset(set, key, value) {
+		return await HSET_ASYNC(set, key, value);
+	},
+	async hgetall(key) {
+		return await HGETALL_ASYNC(key);
+	},
+	async smembers(set) {
+		return await SMEMBERS_ASYNC(set);
+	},
+	async sadd(set, value) {
+		return await SADD_ASYNC(set, value);
+	},
+	async scard(set) {
+		return await SCARD_ASYNC(set);
 	}
 }
