@@ -8,7 +8,8 @@ function createEmbed(profile) {
 	let Embed = new Discord.MessageEmbed()
 	.setColor(config.profile.color)
 	.setTitle(profile.name)
-	.setThumbnail(profile.pp)
+	.setDescription(profile.desc)
+	.setThumbnail(profile.avatar)
 	.addFields(
 		{ name: `${replies.balanceLabel}`, value: `${profile.currency} ${config.bet.name}`, inline: false}
 	)
@@ -28,6 +29,7 @@ module.exports = {
 			await redis.hmset(`profile:${message.author.id}`, {
 				name: message.author.username,
 				avatar: message.author.displayAvatarURL(),
+				desc: config.profile.default_desc,
 				currency: 0
 			});
 			log.info(`New profile created for ${message.author.username}`);
