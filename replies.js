@@ -1,3 +1,4 @@
+const config = require("./config.json");
 /*Only Change String and not parameter ! Otherwise you will have to change them in the source code
 For now you don't have the possibility to change messages'variables but only the sentence herself
 
@@ -24,3 +25,10 @@ exports.BetInsufisantBalance = (name) => `You don't have enought ${name} for thi
 exports.WinInvalidArguments = `⚙️ Invalid Parameters!\n //win <Choice Nbr>⚙️`;
 exports.WinningChoice = (winningChoice, totalBet, name) => `And the winner is ${winningChoice} with a total of ${totalBet} ${name}`;
 exports.Winner = (winnerName, gain, name) => `${winnerName} get ${gain} ${name}`;
+
+//Profile Message
+exports.balanceLabel = "Balance";
+//Settings Messages
+exports.settingInvalidParameterNumber = `⚙️ Invalid Parameters Number!\n Use command "${config.prefix}help" for more info ⚙️`;
+exports.settingInvalidParameter = `⚙️ Invalid Parameters !\n Use command "${config.prefix}help" for more info ⚙️`;
+exports.settingInvalidAuhtor = `⚙️ Invalid Author !\n Use command "${config.prefix}profile" to initialize your profile ⚙️`;
