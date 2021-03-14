@@ -3,7 +3,6 @@ const config = require('../config.json');
 const { promisify } = require('util');
 
 const redis = require("redis");
-const { off } = require("process");
 var redisClient = redis.createClient({
 	host: config.redis.host,
 	port: config.redis.port
@@ -25,6 +24,7 @@ redisClient.on('reconnecting', function(delay, attempt) {
 	log.warning(`Trying to reconnect to redis client, ${attempt}`);
 });
 
+EXISTS_ASYNC = promisify(redisClient.exists).bind(redisClient);
 GET_ASYNC = promisify(redisClient.get).bind(redisClient);
 SET_ASYNC = promisify(redisClient.set).bind(redisClient);
 DEL_ASYNC = promisify(redisClient.del).bind(redisClient);
@@ -40,12 +40,16 @@ LRANGE_ASYNC = promisify(redisClient.lrange).bind(redisClient);
 HMSET_ASYNC = promisify(redisClient.hmset).bind(redisClient);
 HSET_ASYNC = promisify(redisClient.hset).bind(redisClient);
 HGETALL_ASYNC = promisify(redisClient.hgetall).bind(redisClient);
+HGET_ASYNC = promisify(redisClient.hget).bind(redisClient);
 
 //set
 SADD_ASYNC = promisify(redisClient.sadd).bind(redisClient);
 SMEMBERS_ASYNC = promisify(redisClient.smembers).bind(redisClient);
 SCARD_ASYNC = promisify(redisClient.scard).bind(redisClient);
 module.exports = {
+	async exists(key) {
+		return await EXISTS_ASYNC(key);
+	},
 	async get(key) {
 		return await GET_ASYNC(key);
 	},
@@ -87,6 +91,9 @@ module.exports = {
 	},
 	async hgetall(key) {
 		return await HGETALL_ASYNC(key);
+	},
+	async hget(key, field) {
+		return await HGET_ASYNC(key, field);
 	},
 	async smembers(set) {
 		return await SMEMBERS_ASYNC(set);
