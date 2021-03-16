@@ -4,40 +4,33 @@ const config = require("../config.json");
 const replies = require('../replies');
 const Discord = require("discord.js");
 const {progressBar} = require("../Tools/progressBar");
+const uniqid = require('uniqid');
 
-
-async function saveBet(redis, message, predict) {
-	await redis.set('predictAuthor', predict.author);
-	await redis.set('predictQuestion', predict.question);
-	for (let i = 0; i < predict.propsNbr; i++) {
-		await redis.set(`prop${i+1}`, 0);
-		await redis.zadd('props', i+1, predict.props[i]);
+async function deleteBet(id) {
+	let props_nbr = await redis.hget(`bet:${id}`, 'props_nbr');
+	for (let i = 0; i < props_nbr; i++) {
+		let prop_id = await redis.hget(`bet:${id}`, `prop:${i}`);
+		await redis.del(`props:${prop_id}`);
 	}
-	msgCtor(message);
+	let msg_id = await redis.hget(`bet:${id}`, `msg_id`);
+	await redis.del(`bet_msg:${msg_id}`);
+	await redis.del(`bet:${id}`);
+}
+async function saveBet(message, predict, props) {
+	let id = uniqid();
+	await redis.hmset(`bet:${id}`, predict);
+	for (let i = 0; i < predict.props_nbr; i++) {
+		let prop_id = uniqid();
+		await redis.hset(`bet:${id}`, `prop:${i}`, prop_id);
+		await redis.hset(`props:${prop_id}`, 'text', props[i]);
+		await redis.hset(`props:${prop_id}`, 'balance', 0);
+	}
+	let msg = await message.channel.send('test ma couille');
+	await redis.set(`bet_msg:${msg.id}`, id);
+	await redis.hset(`bet:${id}`, 'msg_id', msg.id);
+	//msgCtor(message);
 }
 
-async function deletePredict(message) {
-	log.info(`${message.author.username} is trying to delete current prediction`);
-	let author = await redis.get('predictAuthor');
-	if (author != message.author.id) {
-		log.ko(`Can't delete : Wrong author`);
-		message.reply(replies.PredictDeleteWrongAuthor, {
-			tts: config.bet.tts,
-		});
-		return;
-	}
-	redis.del('predictMessageID');
-	redis.del('predictAuthor');
-	redis.del('predictQuestion');
-	redis.del('totalBet');
-	redis.del('props');
-	for (let i = 0; i < 9; i++) {
-		redis.del(`prop${i + 1}`);
-		redis.del(`prop${i + 1}Candidate`);
-	}
-	log.redis('Prediction succesfully deleted');
-	return;
-}
 
 async function msgCtor(message) {
 	let Embed = new Discord.MessageEmbed();
@@ -62,9 +55,10 @@ module.exports = {
 	name: "predict",
 	desc: "instanciate a prediction",
 	async run(client, message, args) {
+		//temporaire
+		if (args.at[0] == "delete")
+			deleteBet(args.at[1]);
 		log.info(`${message.author.username} is trying to place make a prediction`);
-		if (args.at[0] == "-delete")
-			return deletePredict(message);
 		if (args.lenght < 3) {
 			log.ko(`Invalid Parameter for prediction`);
 			message.reply(replies.PredictInvalidArguments, {
@@ -74,15 +68,11 @@ module.exports = {
 		}
 		const question = args.at[0];
 		const props = args.at.splice(1);
-		/* let betMsg = `Question : ${question}\n`;
-		for (let i = 0; i < args.lenght - 1; i++)
-			betMsg += `\t${i + 1}) ${props[i]}\n`; */
-		saveBet(redis, message, {
-			author: message.author.id,
-			props: props,
+		saveBet(message, {
 			question: question,
-			propsNbr: args.lenght - 1
-		});
+			props_nbr: args.lenght - 1,
+			author_id: message.author.id
+		}, props);
 		log.redis(`New prediction with question : ${question} and props : [${props}] by ${message.author.username}`);
 	}
 }

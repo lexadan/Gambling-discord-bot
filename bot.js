@@ -48,6 +48,16 @@ client.on('messageReactionAdd', async (reaction, user) => {
 			return;
 		}
 	}
+	checkBetMessage(reaction, user);
 });
 
 client.login(auth.token);
+
+async function checkBetMessage(reaction, user) {
+	let msg = await redis.get(`bet_msg:${reaction.message.id}`);
+	if (msg) {
+		let bet = await redis.hget(`bet:${msg}`, "question");
+		reaction.message.channel.send(bet);
+	}
+	return;
+}

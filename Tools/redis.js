@@ -41,6 +41,7 @@ HMSET_ASYNC = promisify(redisClient.hmset).bind(redisClient);
 HSET_ASYNC = promisify(redisClient.hset).bind(redisClient);
 HGETALL_ASYNC = promisify(redisClient.hgetall).bind(redisClient);
 HGET_ASYNC = promisify(redisClient.hget).bind(redisClient);
+HDEL_ASYNC = promisify(redisClient.hdel).bind(redisClient);
 
 //set
 SADD_ASYNC = promisify(redisClient.sadd).bind(redisClient);
@@ -94,6 +95,9 @@ module.exports = {
 	},
 	async hget(key, field) {
 		return await HGET_ASYNC(key, field);
+	},
+	async hdel(key, fields) {
+		return await HDEL_ASYNC(key, fields);
 	},
 	async smembers(set) {
 		return await SMEMBERS_ASYNC(set);
