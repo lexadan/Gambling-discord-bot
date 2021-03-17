@@ -86,34 +86,53 @@ async function checkAlreadyBet(message) {
 	return res;
 }
 
+function getEmojieValue(emoji) {
+	switch(emoji) {
+		case '1️⃣':
+			return 0;
+		case '2️⃣':
+			return 1;
+		case '3️⃣':
+			return 2;
+		case '4️⃣':
+			return 3;
+		case '5️⃣':
+			return 4;
+		default:
+			throw("Wrong emoji")
+	}
+}
+
+function displayBettable() {
+	let res = '';
+	for (let i = 0; i < config.bet.bettable_lenght; i++) {
+		res += `${config.bet.bettable[i].emoji} = ${config.bet.bettable[i].value} ${config.bet.name}\t`
+	}
+	return res;
+}
+
+async function deleteMessage(msg_id) {
+	await redis.del(`props_msg:${msg_id}`);
+	console.log(msg_id);
+}
 module.exports = {
-	name: "bet",
-	desc: "Flemme",
-	async run(client, message, args) {
-		log.info(`${message.author.username} is trying to place a bet`);
-		if (args.lenght != 2) {
-			log.ko('Invalid parameters for bet');
-			message.reply(replies.BetInvalideArguments, {
-				tts: config.bet.tts,
-			});
+	async sendBetMessage(reaction, user, bet_id) {
+		let emoji_value = 0;
+		try {
+			emoji_value = getEmojieValue(reaction.emoji.name);
+		} catch(e) {
+			log.warning(e);
 			return;
 		}
-		let propChoice = +args.at[0];
-		let bet = +args.at[1];
-		let propNbr = await redis.zcount('props', 0, 9);
-		if (propChoice > propNbr)  {
-			log.ko('Invalid Parameter for bet: propChoice');
-			return;
+		let prop_id = await redis.hget(`bet:${bet_id}`, `prop:${emoji_value}`);
+		let prop = await redis.hgetall(`props:${prop_id}`);
+		let pound_msg = displayBettable();
+		let msg = await reaction.message.channel.send(`${prop.text}\n${replies.betHowMany(user.username, config.bet.name)}\n${pound_msg}`);
+		for (let i = 0; i < config.bet.bettable_lenght; i++) {
+			msg.react(`${config.bet.bettable[i].emoji}`);
 		}
-		if (isNaN(bet) || bet < 0) {
-			log.ko('Invalid Parameter for bet: Bet');
-			return;
-		}
-		checkAlreadyBet(message).then(bool => {
-			if (bool) {
-				placeBet(message, bet, propChoice);
-				updateMessage(message);
-			}
-		});
+		await redis.set(`props_msg:${msg.id}`, prop_id);
+		await redis.sadd(`better_for:${bet_id}`, user.id);
+		setTimeout(deleteMessage, 5000, msg.id);
 	}
 }

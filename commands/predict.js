@@ -15,6 +15,7 @@ async function deleteBet(id) {
 	let msg_id = await redis.hget(`bet:${id}`, `msg_id`);
 	await redis.del(`bet_msg:${msg_id}`);
 	await redis.del(`bet:${id}`);
+	await redis.del(`better_for:${id}`);
 }
 
 async function saveBet(message, predict, props) {
@@ -41,7 +42,7 @@ async function msgCtor(id, message) {
 		let prop = await redis.hgetall(`props:${prop_id}`);
 		let cote = (prop.balance == 0) ? (0) : (bet.balance/prop.balance)
 		let progressbar = progressBar(0, 1, 15);
-		Embed.addField(`${i + 1}) ${bet.text}`, `${progressbar} ${prop.balance} ${config.bet.name} (1:${cote})`);
+		Embed.addField(`${i + 1}) ${prop.text}`, `${progressbar} ${prop.balance} ${config.bet.name} (1:${cote})`);
 	}
 	let msg = await message.channel.send(Embed);
 	await redis.set(`bet_msg:${msg.id}`, id);

@@ -42,11 +42,13 @@ HSET_ASYNC = promisify(redisClient.hset).bind(redisClient);
 HGETALL_ASYNC = promisify(redisClient.hgetall).bind(redisClient);
 HGET_ASYNC = promisify(redisClient.hget).bind(redisClient);
 HDEL_ASYNC = promisify(redisClient.hdel).bind(redisClient);
+HKEYS_ASYNC = promisify(redisClient.hkeys).bind(redisClient);
 
 //set
 SADD_ASYNC = promisify(redisClient.sadd).bind(redisClient);
 SMEMBERS_ASYNC = promisify(redisClient.smembers).bind(redisClient);
 SCARD_ASYNC = promisify(redisClient.scard).bind(redisClient);
+SISMEMBER_ASYNC = promisify(redisClient.sismember).bind(redisClient);
 module.exports = {
 	async exists(key) {
 		return await EXISTS_ASYNC(key);
@@ -99,6 +101,9 @@ module.exports = {
 	async hdel(key, fields) {
 		return await HDEL_ASYNC(key, fields);
 	},
+	async hkeys(key) {
+		return await HKEYS_ASYNC(key);
+	},
 	async smembers(set) {
 		return await SMEMBERS_ASYNC(set);
 	},
@@ -107,5 +112,8 @@ module.exports = {
 	},
 	async scard(set) {
 		return await SCARD_ASYNC(set);
+	},
+	async sismember(key, member) {
+		return await SISMEMBER_ASYNC(key, member);
 	}
 }

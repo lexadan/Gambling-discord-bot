@@ -32,3 +32,5 @@ exports.balanceLabel = "Balance";
 exports.settingInvalidParameterNumber = `⚙️ Invalid Parameters Number!\n Use command "${config.prefix}help" for more info ⚙️`;
 exports.settingInvalidParameter = `⚙️ Invalid Parameters !\n Use command "${config.prefix}help" for more info ⚙️`;
 exports.settingInvalidAuhtor = `⚙️ Invalid Author !\n Use command "${config.prefix}profile" to initialize your profile ⚙️`;
+
+exports.betHowMany = (username, name) => `${username}, how Many ${name} do you want to bet`;

@@ -9,6 +9,7 @@ const { parse } = require ("discord-command-parser");
 const fs = require('fs');
 const replies = require('./replies');
 const redis = require("./Tools/redis");
+const { sendBetMessage } = require("./modules/bet");
 
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 const commandsList = new Map();
@@ -40,6 +41,8 @@ client.on("message", message => {
 });
 
 client.on('messageReactionAdd', async (reaction, user) => {
+	if (user.id == client.user.id)
+		return;
 	if (reaction.partial) {
 		try {
 			await reaction.fetch();
@@ -49,15 +52,29 @@ client.on('messageReactionAdd', async (reaction, user) => {
 		}
 	}
 	checkBetMessage(reaction, user);
+	checkPropMessage(reaction, user);
 });
 
 client.login(auth.token);
 
 async function checkBetMessage(reaction, user) {
-	let msg = await redis.get(`bet_msg:${reaction.message.id}`);
-	if (msg) {
-		let bet = await redis.hget(`bet:${msg}`, "question");
-		reaction.message.channel.send(bet);
+	let bet_id = await redis.get(`bet_msg:${reaction.message.id}`);
+	if (bet_id) {
+		let already_voted = await redis.sismember(`better_for:${bet_id}`, user.id);
+		if (already_voted) {
+			log.ko(`${user.username} has already submited a vote`);
+			reaction.users.remove(user.id);
+			return;
+		}
+		sendBetMessage(reaction, user, bet_id);
+	}
+	return;
+}
+
+async function checkPropMessage(reaction, user) {
+	let prop_id = await redis.get(`props_msg:${reaction.message.id}`);
+	if (prop_id) {
+		
 	}
 	return;
 }
