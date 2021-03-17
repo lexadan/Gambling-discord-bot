@@ -8,6 +8,7 @@ const log = require("./Tools/logs");
 const { parse } = require ("discord-command-parser");
 const fs = require('fs');
 const replies = require('./replies');
+const { checkBetMessageReaction } = require('./modules/prediction');
 const redis = require("./Tools/redis");
 
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
@@ -50,6 +51,12 @@ client.on('messageReactionAdd', async (reaction, user) => {
 			return;
 		}
 	}
+	let profile = await redis.exists(`profile:${user.id}`);
+	if (!profile) {
+		reaction.users.remove(user.id);
+		return log.warning(`${user.username} doesn't have a profile set up`);
+	}
+	checkBetMessageReaction(reaction, user);
 });
 
 client.login(auth.token);

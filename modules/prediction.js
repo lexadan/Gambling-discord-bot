@@ -30,6 +30,49 @@ function addOptionsReactions(msg, opt_nbr) {
 	}
 }
 
+function getChoiceByReact(emoji) {
+	switch(emoji) {
+		case '1️⃣':
+			return 0;
+		case '2️⃣':
+			return 1;
+		case '3️⃣':
+			return 2;
+		case '4️⃣':
+			return 3;
+		case '5️⃣':
+			return 4;
+		default:
+			throw("Wrong emoji")
+	}
+}
+
+function displayBettable() {
+	let res = '';
+	for (let i = 0; i < config.bet.bettable_lenght; i++) {
+		res += `${config.bet.bettable[i].emoji} = ${config.bet.bettable[i].value} ${config.bet.name}\t`
+	}
+	return res;
+}
+
+function addBettor(bet, bet_id, emoji, user) {
+	let choice = getChoiceByReact(emoji);
+	let pound_msg = displayBettable();
+	user.send(`${bet.options[choice].content}\n${replies.betHowMany(user.username, config.bet.name)}\n${pound_msg}`).then(msg => {
+		redis.hmset(`msg:${msg.id}`, {
+			bet_id: bet_id,
+			opt_idx: choice
+		});
+		bet.options_msg.push(msg.id);
+		bet.bettors.push(user.id);
+		redis.set(`bet:${bet_id}`, JSON.stringify(bet)).then(
+			log.ok(`New bettor added to bet "${bet_id}"`)
+		);
+	});
+}
+
+
+
 module.exports = {
 	addNewPrediction(data, message) {
 		let bet_id = uniqid();
@@ -38,6 +81,7 @@ module.exports = {
 			author_id: data.author_id,
 			channel_id: data.channel_id,
 			question: data.question,
+			bettors: [],
 			options_lenght: data.options_lenght,
 			options: []
 		};
@@ -45,16 +89,21 @@ module.exports = {
 			bet_json.options.push({
 				content: data.props[i],
 				totalBet: 0,
-				bettor: []
+				bettors: []
 			})
 		}
 		message.channel.send(this.predictionEmbedCtor(bet_json))
 			.then( msg => {
 				addOptionsReactions(msg, bet_json.options_lenght);
 				bet_json.msg_id = msg.id;
-				redis.set(`bet:${bet_id}`, JSON.stringify(bet_json)).then(
-					log.redis(`New prediction: "${bet_id}" by ${message.author.username}`)
-				);
+				bet_json.options_msg = [];
+				try {
+					redis.set(`bet:${bet_id}`, JSON.stringify(bet_json)).then(
+						log.redis(`New prediction: "${bet_json.question}" by ${message.author.username}`)
+					);
+					redis.set(`msg:${msg.id}`, bet_id);
+				} catch (e) { return log.ko(e) }
+
 			});
 		
 	},
@@ -71,5 +120,15 @@ module.exports = {
 			Embed.addField(`${i + 1}) ${opt.content}`, `${progressbar} ${opt.totalBet} ${config.bet.name} (1:${ratio})`);
 		}
 		return Embed;
+	},
+	async checkBetMessageReaction(reaction, user) {
+		try {
+			let bet_id = await redis.get(`msg:${reaction.message.id}`);
+			if (bet_id) {
+				let bet = await redis.get(`bet:${bet_id}`);
+				addBettor(JSON.parse(bet), bet_id, reaction.emoji.name, user)
+			} else
+				reaction.users.remove(user.id);
+		} catch(e) { return log.ko(e)}
 	}
 }
