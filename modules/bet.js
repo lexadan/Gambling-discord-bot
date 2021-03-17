@@ -115,6 +115,16 @@ async function deleteMessage(msg_id) {
 	await redis.del(`props_msg:${msg_id}`);
 	console.log(msg_id);
 }
+
+async function getBetPound(emoji) {
+	for (let i = 0; i < config.bet.bettable_lenght; i++) {
+		if (emoji == config.bet.bettable[i].emoji) {
+			return +config.bet.bettable[i].value;
+		}
+	}
+	throw("Wrong emoji")
+}
+
 module.exports = {
 	async sendBetMessage(reaction, user, bet_id) {
 		let emoji_value = 0;
@@ -127,12 +137,22 @@ module.exports = {
 		let prop_id = await redis.hget(`bet:${bet_id}`, `prop:${emoji_value}`);
 		let prop = await redis.hgetall(`props:${prop_id}`);
 		let pound_msg = displayBettable();
-		let msg = await reaction.message.channel.send(`${prop.text}\n${replies.betHowMany(user.username, config.bet.name)}\n${pound_msg}`);
+		let msg = await user.send(`${prop.text}\n${replies.betHowMany(user.username, config.bet.name)}\n${pound_msg}`);
 		for (let i = 0; i < config.bet.bettable_lenght; i++) {
 			msg.react(`${config.bet.bettable[i].emoji}`);
 		}
 		await redis.set(`props_msg:${msg.id}`, prop_id);
 		await redis.sadd(`better_for:${bet_id}`, user.id);
 		setTimeout(deleteMessage, 120000, msg.id);
+	},
+	async addBet(reaction, user, prop_id) {
+		let bet_id = await redis.hget(`props:${prop_id}`, 'bet_id');
+		try {
+			let bet_pound = await getBetPound(reaction.emoji.name);
+			await redis.hincrby(`bet:${bet_id}`, 'balance', bet_pound);
+			await redis.hincrby(`props:${prop_id}`, 'balance', bet_pound);
+			await redis.sadd(`prop_board:${prop_id}`, `${user.id} ${bet_pound}`);
+		} catch (e) { return (log.ko(e)) }
+		
 	}
 }

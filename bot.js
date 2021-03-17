@@ -9,7 +9,7 @@ const { parse } = require ("discord-command-parser");
 const fs = require('fs');
 const replies = require('./replies');
 const redis = require("./Tools/redis");
-const { sendBetMessage } = require("./modules/bet");
+const { sendBetMessage, addBet } = require("./modules/bet");
 
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 const commandsList = new Map();
@@ -74,7 +74,7 @@ async function checkBetMessage(reaction, user) {
 async function checkPropMessage(reaction, user) {
 	let prop_id = await redis.get(`props_msg:${reaction.message.id}`);
 	if (prop_id) {
-		
+		addBet(reaction, user, prop_id);
 	}
 	return;
 }

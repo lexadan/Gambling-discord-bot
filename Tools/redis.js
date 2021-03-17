@@ -43,6 +43,7 @@ HGETALL_ASYNC = promisify(redisClient.hgetall).bind(redisClient);
 HGET_ASYNC = promisify(redisClient.hget).bind(redisClient);
 HDEL_ASYNC = promisify(redisClient.hdel).bind(redisClient);
 HKEYS_ASYNC = promisify(redisClient.hkeys).bind(redisClient);
+HINCRBY_ASYNC = promisify(redisClient.hincrby).bind(redisClient);
 
 //set
 SADD_ASYNC = promisify(redisClient.sadd).bind(redisClient);
@@ -103,6 +104,9 @@ module.exports = {
 	},
 	async hkeys(key) {
 		return await HKEYS_ASYNC(key);
+	},
+	async hincrby(key, field, incr) {
+		return await HINCRBY_ASYNC(key, field, incr);
 	},
 	async smembers(set) {
 		return await SMEMBERS_ASYNC(set);

@@ -11,6 +11,7 @@ async function deleteBet(id) {
 	for (let i = 0; i < props_nbr; i++) {
 		let prop_id = await redis.hget(`bet:${id}`, `prop:${i}`);
 		await redis.del(`props:${prop_id}`);
+		await redis.del(`prop_board:${prop_id}`);
 	}
 	let msg_id = await redis.hget(`bet:${id}`, `msg_id`);
 	await redis.del(`bet_msg:${msg_id}`);
@@ -26,6 +27,7 @@ async function saveBet(message, predict, props) {
 		await redis.hset(`bet:${id}`, `prop:${i}`, prop_id);
 		await redis.hset(`props:${prop_id}`, 'text', props[i]);
 		await redis.hset(`props:${prop_id}`, 'balance', 0);
+		await redis.hset(`props:${prop_id}`, 'bet_id', id);
 	}
 	msgCtor(id, message);
 }
