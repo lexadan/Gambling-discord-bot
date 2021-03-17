@@ -133,6 +133,6 @@ module.exports = {
 		}
 		await redis.set(`props_msg:${msg.id}`, prop_id);
 		await redis.sadd(`better_for:${bet_id}`, user.id);
-		setTimeout(deleteMessage, 5000, msg.id);
+		setTimeout(deleteMessage, 120000, msg.id);
 	}
 }
