@@ -8,20 +8,21 @@ module.exports = {
 	name: "wallet",
 	desc: "Show user's wallet",
 	async run(client, message, args) {
-		log.info(`${message.author.username} try access his wallet`);
-		let balance = await redis.get(message.author.id);
-		if (!balance) {
-			log.warning("Author have no balance, default settings applied");
-			message.reply(replies.WalletDefaultSetting(config.bet.default_balance, config.bet.name), {
-				tts: config.bet.tts,
-			})
-			await redis.set(message.author.id, config.bet.default_balance);
-			log.redis(`Balance for ${message.author.username} have been updated to ${config.bet.default_balance}`);
-		} else {
-			log.ok(`${message.author.username} has ${balance} points`);
-			message.reply(replies.WalletDisplay(balance, config.bet.name), {
-				tts: config.bet.tts,
+		let exist = await redis.exists(`test`);
+		if (exist) {
+			let config_ = await redis.get('test');
+			let obj = JSON.parse(config_);
+			obj.prefix = 'nul';
+			obj.bet.test = 'lul';
+			obj.bet.test2 = [];
+			obj.bet.test2.push({
+				bite: "miam",
+				byte: "Pas miam"
 			});
+			console.log(obj.bet.test2[0].bite);
+		}
+		else {
+			await redis.set('test', JSON.stringify(config));
 		}
 	}
 }

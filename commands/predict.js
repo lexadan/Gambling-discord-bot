@@ -43,7 +43,7 @@ async function msgCtor(id, message) {
 		let prop_id = await redis.hget(`bet:${id}`, `prop:${i}`);
 		let prop = await redis.hgetall(`props:${prop_id}`);
 		let cote = (prop.balance == 0) ? (0) : (bet.balance/prop.balance)
-		let progressbar = progressBar(0, 1, 15);
+		let progressbar = progressBar(cote, 1, 15);
 		Embed.addField(`${i + 1}) ${prop.text}`, `${progressbar} ${prop.balance} ${config.bet.name} (1:${cote})`);
 	}
 	let msg = await message.channel.send(Embed);
@@ -93,7 +93,9 @@ module.exports = {
 			question: question,
 			props_nbr: args.lenght - 1,
 			author_id: message.author.id,
-			balance: 0
+			balance: 0,
+			channel_id: message.channel.id,
+			guild_id: message.guild.id
 		}, props);
 		log.redis(`New prediction with question : ${question} and props : [${props}] by ${message.author.username}`);
 	}
