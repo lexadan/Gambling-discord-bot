@@ -8,7 +8,7 @@ const log = require("./Tools/logs");
 const { parse } = require ("discord-command-parser");
 const fs = require('fs');
 const replies = require('./replies');
-const { checkBetMessageReaction, checkMoneyMessageReaction } = require('./modules/prediction');
+const { checkBetMessageReaction, checkMoneyMessageReaction, checkWinMessageReaction } = require('./modules/prediction');
 const redis = require("./Tools/redis");
 
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
@@ -59,6 +59,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 	}
 	checkBetMessageReaction(reaction, user);
 	checkMoneyMessageReaction(reaction, user, profile, client);
+	checkWinMessageReaction(reaction, user, client);
 });
 
 client.login(auth.token);

@@ -124,8 +124,26 @@ function addTotalBet(profile, reaction, user, bet_data, client) {
 	});
 }
 
+function declareWinners(reaction, bet, client, bet_id) {
+	let winner = getChoiceByReact(reaction.emoji.name);
+	client.channels.fetch(bet.channel_id).then(channel => {
+		channel.send(`winner is : ${bet.options[winner].content}`);
+		module.exports.deletePrediction(bet, bet_id);
+	});
+}
+
 module.exports = {
-	addNewPrediction(data, message) {
+	deletePrediction(bet, bet_id) {
+		redis.del(`msg:win:${bet.msg_win_id}`);
+		redis.del(`msg:${bet.msg_id}`);
+		let options_msg = bet.options_msg;
+		if (options_msg)
+			options_msg.forEach(element => {
+			redis.del(`msg:money:${element}`);
+		});
+		redis.del(`bet:${bet_id}`);
+	},
+	async addNewPrediction(data, message) {
 		let bet_id = uniqid();
 		let bet_json = {
 			totalBet: data.totalBet,
@@ -145,20 +163,20 @@ module.exports = {
 				bettors: []
 			})
 		}
-		message.channel.send(this.predictionEmbedCtor(bet_json))
-			.then( msg => {
-				addOptionsReactions(msg, bet_json.options_lenght);
-				bet_json.msg_id = msg.id;
-				bet_json.options_msg = [];
-				try {
-					redis.set(`bet:${bet_id}`, JSON.stringify(bet_json)).then(
-						log.redis(`New prediction: "${bet_json.question}" by ${message.author.username}`)
-					);
-					redis.set(`msg:${msg.id}`, bet_id);
-				} catch (e) { return log.ko(e) }
-
-			});
-		
+		try {
+			let msg = await message.channel.send(this.predictionEmbedCtor(bet_json));
+			addOptionsReactions(msg, bet_json.options_lenght);
+			bet_json.msg_id = msg.id;
+			bet_json.options_msg = [];
+			redis.set(`msg:${msg.id}`, bet_id);
+			let win_msg = await message.author.send(`Choose winner !`);
+			addOptionsReactions(win_msg, bet_json.options_lenght);
+			bet_json.msg_win_id = win_msg.id;
+			redis.set(`msg:win:${win_msg.id}`, bet_id);
+			redis.set(`bet:${bet_id}`, JSON.stringify(bet_json)).then(
+				log.redis(`New prediction: "${bet_json.question}" by ${message.author.username}`)
+			);
+		} catch (e) { return log.ko(e) }
 	},
 	predictionEmbedCtor(bet) {
 		let Embed = new Discord.MessageEmbed()
@@ -169,7 +187,6 @@ module.exports = {
 		for (let i = 0; i < bet.options_lenght; i++) {
 			let opt = bet.options[i];
 			let ratio = (opt.totalBet == 0) ? 0 : (opt.totalBet / bet.totalBet);
-			console.log(`ratio : ${ratio}`);
 			let progressbar = progressBar(ratio, 1, 15);
 			Embed.addField(`${i + 1}) ${opt.content}`, `${progressbar} ${opt.totalBet} ${config.bet.name} (1:${ratio})`);
 		}
@@ -198,6 +215,17 @@ module.exports = {
 					bet_id: bet_data.bet_id,
 					choice: bet_data.opt_idx
 				}, client);
+			}
+		} catch(e) {log.ko(e)}
+	},
+	async checkWinMessageReaction(reaction, user, client) {
+		try {
+			let bet_id = await redis.get(`msg:win:${reaction.message.id}`);
+			if (bet_id) {
+				let bet = await redis.get(`bet:${bet_id}`);
+				if (!bet)
+					throw ("Unknown Bet");
+				declareWinners(reaction, JSON.parse(bet), client, bet_id);
 			}
 		} catch(e) {log.ko(e)}
 	}
