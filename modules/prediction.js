@@ -55,11 +55,23 @@ function displayBettable() {
 	return res;
 }
 
+function addReaction(msg) {
+	for (let i = 0; i < config.bet.bettable_lenght; i++) {
+		msg.react(config.bet.bettable[i].emoji);
+	}
+}
+
 function addBettor(bet, bet_id, emoji, user) {
+	for (let  i = 0; i < bet.bettors_nbr; i++) {
+		if (bet.bettors[i] == user.id)
+			return;
+	}
+	bet.bettors_nbr++;
 	let choice = getChoiceByReact(emoji);
 	let pound_msg = displayBettable();
 	user.send(`${bet.options[choice].content}\n${replies.betHowMany(user.username, config.bet.name)}\n${pound_msg}`).then(msg => {
-		redis.hmset(`msg:${msg.id}`, {
+		addReaction(msg);
+		redis.hmset(`msg:money:${msg.id}`, {
 			bet_id: bet_id,
 			opt_idx: choice
 		});
@@ -71,7 +83,46 @@ function addBettor(bet, bet_id, emoji, user) {
 	});
 }
 
-
+function addTotalBet(profile, reaction, user, bet_data, client) {
+	let balance;
+	for (let i = 0; i < config.bet.bettable_lenght; i++)
+		if (config.bet.bettable[i].emoji == reaction.emoji.name)
+			balance = config.bet.bettable[i].value;
+	if (balance == undefined)
+		return log.ko(`Wrong emoji used`, 84);
+	if (balance > profile.wallet) {
+		reaction.message.channel.send(replies.BetInsufisantBalance(config.bet.name), {
+			tts: config.bet.tss
+		});
+		return log.ko(`Insufisant wallet fund for bet ${profile.wallet} < ${balance}`);
+	}
+	bet_data.bet.totalBet += balance;
+	bet_data.bet.options[bet_data.choice].totalBet += balance;
+	let alreadybet = false;
+	for (let i = 0; i < bet_data.bet.options[bet_data.choice].bettors_nbr; i++) {
+		if (bet_data.bet.options[bet_data.choice].bettors[i].id == user.id) {
+			alreadybet = true;
+			bet_data.bet.options[bet_data.choice].bettors[i].bet += balance;
+		}
+	}
+	if (!alreadybet) {
+		bet_data.bet.options[bet_data.choice].bettors.push({
+			id: user.id,
+			username: user.username,
+			bet: balance
+		});
+		bet_data.bet.options[bet_data.choice].bettors_nbr++;
+	}
+	redis.hset(`profile:${user.id}`, 'wallet', profile.wallet - balance);
+	redis.set(`bet:${bet_data.bet_id}`, JSON.stringify(bet_data.bet)).then(() => {
+		log.redis(`Bet succesfully added for ${user.username}`);
+		client.channels.fetch(bet_data.bet.channel_id).then(channel => {
+			channel.messages.fetch(bet_data.bet.msg_id).then(msg => {
+				msg.edit(module.exports.predictionEmbedCtor(bet_data.bet));
+			});
+		});
+	});
+}
 
 module.exports = {
 	addNewPrediction(data, message) {
@@ -81,6 +132,7 @@ module.exports = {
 			author_id: data.author_id,
 			channel_id: data.channel_id,
 			question: data.question,
+			bettors_nbr: 0,
 			bettors: [],
 			options_lenght: data.options_lenght,
 			options: []
@@ -89,6 +141,7 @@ module.exports = {
 			bet_json.options.push({
 				content: data.props[i],
 				totalBet: 0,
+				bettors_nbr: 0,
 				bettors: []
 			})
 		}
@@ -115,7 +168,8 @@ module.exports = {
 
 		for (let i = 0; i < bet.options_lenght; i++) {
 			let opt = bet.options[i];
-			let ratio = (opt.totalBet == 0) ? 0 : (bet.totalBet / opt.totalBet);
+			let ratio = (opt.totalBet == 0) ? 0 : (opt.totalBet / bet.totalBet);
+			console.log(`ratio : ${ratio}`);
 			let progressbar = progressBar(ratio, 1, 15);
 			Embed.addField(`${i + 1}) ${opt.content}`, `${progressbar} ${opt.totalBet} ${config.bet.name} (1:${ratio})`);
 		}
@@ -128,7 +182,23 @@ module.exports = {
 				let bet = await redis.get(`bet:${bet_id}`);
 				addBettor(JSON.parse(bet), bet_id, reaction.emoji.name, user)
 			} else
-				reaction.users.remove(user.id);
+				if (reaction.message.channel.type != 'dm')
+					reaction.users.remove(user.id);
 		} catch(e) { return log.ko(e)}
+	},
+	async checkMoneyMessageReaction(reaction, user, profile, client) {
+		try {
+			let bet_data = await redis.hgetall(`msg:money:${reaction.message.id}`);
+			if (bet_data) {
+				let bet = await redis.get(`bet:${bet_data.bet_id}`);
+				if (!bet)
+					throw ("Unknown Bet");
+				addTotalBet(profile, reaction, user, {
+					bet: JSON.parse(bet),
+					bet_id: bet_data.bet_id,
+					choice: bet_data.opt_idx
+				}, client);
+			}
+		} catch(e) {log.ko(e)}
 	}
 }
