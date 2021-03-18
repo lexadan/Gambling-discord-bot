@@ -42,6 +42,8 @@ function getChoiceByReact(emoji) {
 			return 3;
 		case '5️⃣':
 			return 4;
+		case `❌`:
+			return -1;
 		default:
 			throw("Wrong emoji")
 	}
@@ -61,7 +63,36 @@ function addReaction(msg) {
 	}
 }
 
-function addBettor(bet, bet_id, emoji, user) {
+function winEmbedCtor(bet) {
+	let Embed = new Discord.MessageEmbed()
+		.setColor(config.bet.embed_color)
+		.setTitle("Choose the winner")
+		.setDescription(bet.question);
+
+		for (let i = 0; i < bet.options_lenght; i++) {
+			let opt = bet.options[i];
+			Embed.addField(`${i + 1}) ${opt.content}`, '\u200B');
+		}
+		return Embed;
+}
+function bettableEmbedCtor(profile, option, question, totalbet) {
+	let Embed = new Discord.MessageEmbed()
+		.setColor(config.bet.embed_color)
+		.setTitle(`Bets: ${question}`)
+		.setDescription(`You choosed "${option.content}"`)
+		.addFields(
+			{ name: 'Wallet', value: `${profile.wallet}${config.bet.name}`, inline: true},
+			{ name: 'Total Bet', value: `${totalbet}${config.bet.name}`, inline: true},
+			{ name: '\u200B', value: '\u200B' }
+		);
+	let bettables = config.bet.bettable;
+	bettables.forEach(element => {
+		Embed.addField(`${element.emoji}`, `${element.value}`, true)
+	});
+	return Embed;
+}
+
+function addBettor(bet, bet_id, emoji, user, profile) {
 	for (let  i = 0; i < bet.bettors_nbr; i++) {
 		if (bet.bettors[i] == user.id)
 			return;
@@ -69,7 +100,7 @@ function addBettor(bet, bet_id, emoji, user) {
 	bet.bettors_nbr++;
 	let choice = getChoiceByReact(emoji);
 	let pound_msg = displayBettable();
-	user.send(`${bet.options[choice].content}\n${replies.betHowMany(user.username, config.bet.name)}\n${pound_msg}`).then(msg => {
+	user.send(bettableEmbedCtor(profile, bet.options[choice], bet.question, 0)).then(msg => {
 		addReaction(msg);
 		redis.hmset(`msg:money:${msg.id}`, {
 			bet_id: bet_id,
@@ -99,10 +130,12 @@ function addTotalBet(profile, reaction, user, bet_data, client) {
 	bet_data.bet.totalBet += balance;
 	bet_data.bet.options[bet_data.choice].totalBet += balance;
 	let alreadybet = false;
+	let totalbet = 0;
 	for (let i = 0; i < bet_data.bet.options[bet_data.choice].bettors_nbr; i++) {
 		if (bet_data.bet.options[bet_data.choice].bettors[i].id == user.id) {
 			alreadybet = true;
 			bet_data.bet.options[bet_data.choice].bettors[i].bet += balance;
+			totalbet = bet_data.bet.options[bet_data.choice].bettors[i].bet;
 		}
 	}
 	if (!alreadybet) {
@@ -112,8 +145,10 @@ function addTotalBet(profile, reaction, user, bet_data, client) {
 			bet: balance
 		});
 		bet_data.bet.options[bet_data.choice].bettors_nbr++;
+		totalbet = balance;
 	}
 	redis.hset(`profile:${user.id}`, 'wallet', profile.wallet - balance);
+	profile.wallet -= balance;
 	redis.set(`bet:${bet_data.bet_id}`, JSON.stringify(bet_data.bet)).then(() => {
 		log.redis(`Bet succesfully added for ${user.username}`);
 		client.channels.fetch(bet_data.bet.channel_id).then(channel => {
@@ -121,11 +156,17 @@ function addTotalBet(profile, reaction, user, bet_data, client) {
 				msg.edit(module.exports.predictionEmbedCtor(bet_data.bet));
 			});
 		});
+		reaction.message.edit(bettableEmbedCtor(profile, bet_data.bet.options[bet_data.choice], bet_data.bet.question, totalbet));
 	});
 }
 
 function declareWinners(reaction, bet, client, bet_id) {
 	let winning_choice = getChoiceByReact(reaction.emoji.name);
+	if (winning_choice == -1) {
+		log.info(`Bet "${bet.question}" have been sucesfully deleted`);
+		module.exports.deletePrediction(bet, bet_id);
+		return;
+	}
 	let Embed = new Discord.MessageEmbed()
 		.setColor(config.bet.embed_color)
 		.setTitle("Prediction Winners !")
@@ -181,8 +222,9 @@ module.exports = {
 			bet_json.msg_id = msg.id;
 			bet_json.options_msg = [];
 			redis.set(`msg:${msg.id}`, bet_id);
-			let win_msg = await message.author.send(`Choose winner !`);
+			let win_msg = await message.author.send(winEmbedCtor(bet_json));
 			addOptionsReactions(win_msg, bet_json.options_lenght);
+			win_msg.react(`❌`);
 			bet_json.msg_win_id = win_msg.id;
 			redis.set(`msg:win:${win_msg.id}`, bet_id);
 			redis.set(`bet:${bet_id}`, JSON.stringify(bet_json)).then(
@@ -204,12 +246,12 @@ module.exports = {
 		}
 		return Embed;
 	},
-	async checkBetMessageReaction(reaction, user) {
+	async checkBetMessageReaction(reaction, user, profile) {
 		try {
 			let bet_id = await redis.get(`msg:${reaction.message.id}`);
 			if (bet_id) {
 				let bet = await redis.get(`bet:${bet_id}`);
-				addBettor(JSON.parse(bet), bet_id, reaction.emoji.name, user)
+				addBettor(JSON.parse(bet), bet_id, reaction.emoji.name, user, profile)
 			} else
 				if (reaction.message.channel.type != 'dm')
 					reaction.users.remove(user.id);
