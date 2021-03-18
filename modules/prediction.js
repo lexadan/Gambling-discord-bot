@@ -125,9 +125,21 @@ function addTotalBet(profile, reaction, user, bet_data, client) {
 }
 
 function declareWinners(reaction, bet, client, bet_id) {
-	let winner = getChoiceByReact(reaction.emoji.name);
+	let winning_choice = getChoiceByReact(reaction.emoji.name);
+	let Embed = new Discord.MessageEmbed()
+		.setColor(config.bet.embed_color)
+		.setTitle("Prediction Winners !")
+		.setDescription(bet.options[winning_choice].content)
 	client.channels.fetch(bet.channel_id).then(channel => {
-		channel.send(`winner is : ${bet.options[winner].content}`);
+		let winners = bet.options[winning_choice].bettors;
+		let totalBet = bet.totalBet;
+		let optBet = bet.options[winning_choice].totalBet;
+		let cote = Math.round(totalBet / optBet);
+		winners.forEach(winner => {
+			redis.hincrby(`profile:${winner.id}`, 'wallet',  winner.bet * cote);
+			Embed.addField(winner.username, `${winner.bet * cote} ${config.bet.name}`);
+		});
+		channel.send(Embed);
 		module.exports.deletePrediction(bet, bet_id);
 	});
 }
@@ -186,8 +198,8 @@ module.exports = {
 
 		for (let i = 0; i < bet.options_lenght; i++) {
 			let opt = bet.options[i];
-			let ratio = (opt.totalBet == 0) ? 0 : (opt.totalBet / bet.totalBet);
-			let progressbar = progressBar(ratio, 1, 15);
+			let ratio = (opt.totalBet == 0) ? 0 : (bet.totalBet / opt.totalBet);
+			let progressbar = progressBar(opt.totalBet / bet.totalBet, 1, 15);
 			Embed.addField(`${i + 1}) ${opt.content}`, `${progressbar} ${opt.totalBet} ${config.bet.name} (1:${ratio})`);
 		}
 		return Embed;
