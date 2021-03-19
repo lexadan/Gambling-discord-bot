@@ -23,18 +23,23 @@ module.exports = {
 		log.info(`${message.author.username} try to get his profile`);
 		let profile = await redis.hgetall(`profile:${message.author.id}`);
 		if (profile) {
-			await message.channel.send(createEmbed(profile));
+			message.channel.send(createEmbed(profile));
 		} else {
 			try {
-				redis.hmset(`profile:${message.author.id}`, {
+				new_profile = {
 					guild_id: message.guild.id,
 					name: message.author.username,
 					avatar: message.author.displayAvatarURL(),
 					desc: config.profile.default_desc,
 					wallet: config.bet.default_balance
+				};
+				redis.hmset(`profile:${message.author.id}`, new_profile).then(() =>{
+					message.channel.send(createEmbed(new_profile));
+					log.ok(`New profile created for ${message.author.username}`);
 				});
+				
 			} catch(e) { return log.redis(e, 84) }
-			log.ok(`New profile created for ${message.author.username}`);
+			
 		}
 	}
 }

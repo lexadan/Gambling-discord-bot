@@ -57,7 +57,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 			reaction.users.remove(user.id);
 		return log.warning(`${user.username} doesn't have a profile set up`);
 	}
-	checkBetMessageReaction(reaction, user, profile);
+	checkBetMessageReaction(reaction, user, profile, client);
 	checkMoneyMessageReaction(reaction, user, profile, client);
 	checkWinMessageReaction(reaction, user, client);
 });

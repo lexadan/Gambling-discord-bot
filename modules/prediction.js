@@ -120,11 +120,15 @@ emoji: emoji used by the user
 user: user's data
 profile: user's profile
 */
-function addBettor(bet, bet_id, emoji, user, profile) {
+function addBettor(bet, bet_id, emoji, user, profile, client) {
 	for (let  i = 0; i < bet.bettors_nbr; i++) {
 		//Check if user already bet for this prediction and leave if yes
-		if (bet.bettors[i] == user.id)
+		if (bet.bettors[i] == user.id) {
+			client.channels.fetch(bet.channel_id).then(channel => {
+				channel.send(`@${user.username} you already bet`);
+			});
 			return log.warning(`${user.username} already bet`);
+		}
 	}
 	bet.bettors_nbr++;
 	let choice = getChoiceByReact(emoji);
@@ -205,6 +209,16 @@ function addTotalBet(profile, reaction, user, bet_data, client) {
 	});
 }
 
+//Refund bettor of their bet
+function refundBettors(bet) {
+	let options = bet.options;
+	options.forEach(option => {
+		let bettors = option.bettors;
+		bettors.forEach(bettor => {
+			redis.hincrby(`profile:${bettor.id}`, 'wallet', bettor.bet);
+		});
+	});
+}
 // Get the winning option and winning bettors, display it, give reward and delete prediction
 /*
 reaction: user reaction's data
@@ -216,7 +230,8 @@ function declareWinners(reaction, bet, client, bet_id) {
 	let winning_choice = getChoiceByReact(reaction.emoji.name);
 	// QuickFix to know if author decided to delete prediction instead of choosing a winner
 	if (winning_choice == -1) {
-		module.exports.deletePrediction(bet, bet_id);
+		refundBettors(bet);
+		module.exports.deletePrediction(bet, bet_id, client);
 		return;
 	}
 	let Embed = new Discord.MessageEmbed()
@@ -234,7 +249,7 @@ function declareWinners(reaction, bet, client, bet_id) {
 			Embed.addField(winner.username, `${winner.bet * cote} ${config.bet.name}`);
 		});
 		channel.send(Embed);
-		module.exports.deletePrediction(bet, bet_id);
+		module.exports.deletePrediction(bet, bet_id, client);
 	});
 }
 
@@ -245,7 +260,7 @@ module.exports = {
 	bet: bet's data
 	bet_id: bet's id (DB Purpose)
 	*/
-	deletePrediction(bet, bet_id) {
+	deletePrediction(bet, bet_id, client) {
 		redis.del(`msg:win:${bet.msg_win_id}`);
 		redis.del(`msg:${bet.msg_id}`);
 		let options_msg = bet.options_msg;
@@ -254,6 +269,11 @@ module.exports = {
 			redis.del(`msg:money:${element}`);
 		});
 		redis.del(`bet:${bet_id}`);
+		client.channels.fetch(bet.channel_id).then(channel => {
+			channel.messages.fetch(bet.msg_id).then(msg => {
+				msg.delete();
+			});
+		});
 		log.info(`Bet "${bet.question}" have been sucesfully deleted from the database`);
 	},
 	// Add a new prediction in the database
@@ -322,12 +342,12 @@ module.exports = {
 	user: user's data
 	profile: user's profile
 	*/
-	async checkBetMessageReaction(reaction, user, profile) {
+	async checkBetMessageReaction(reaction, user, profile, client) {
 		try {
 			let bet_id = await redis.get(`msg:${reaction.message.id}`);
 			if (bet_id) {
 				let bet = await redis.get(`bet:${bet_id}`);
-				addBettor(JSON.parse(bet), bet_id, reaction.emoji.name, user, profile)
+				addBettor(JSON.parse(bet), bet_id, reaction.emoji.name, user, profile, client)
 			} else
 				if (reaction.message.channel.type != 'dm')
 					reaction.users.remove(user.id);

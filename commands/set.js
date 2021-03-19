@@ -11,7 +11,7 @@ function createEmbed(profile) {
 	.setDescription(profile.desc)
 	.setThumbnail(profile.avatar)
 	.addFields(
-		{ name: `${replies.balanceLabel}`, value: `${profile.currency} ${config.bet.name}`, inline: false}
+		{ name: `${replies.balanceLabel}`, value: `${profile.wallet} ${config.bet.name}`, inline: false}
 	)
 	return Embed;
 }
