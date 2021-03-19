@@ -25,10 +25,13 @@ exports.BetEmbedTitle = (question) => `Bets for: ${question}`;
 exports.BetEmbedDesc = (option) => `You choosed "${option.content}"`;
 exports.BetEmbedWallet = `Wallet`;
 exports.BetEmbedTotalbet = `Total bet`;
+exports.BetLocked = `Prediction is locked you can't bet anymore`;
 //Win
 exports.WinInvalidArguments = `⚙️ Invalid Parameters!\n //win <Choice Nbr>⚙️`;
 exports.WinEmbedTitle = (bet) => `Choose the winner`;
 exports.WinnersEmbedTitle = (bet) => "Prediction Winners !";
+exports.WinEmbedLock = 'Lock the prediction\'s bets';
+exports.WinEmbedDelete = `Delete current prediction and refund bettors`;
 
 //Profile Message
 exports.balanceLabel = "Balance";

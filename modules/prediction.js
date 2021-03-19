@@ -52,8 +52,6 @@ function getChoiceByReact(emoji) {
 			return 3;
 		case '5️⃣':
 			return 4;
-		case `❌`:
-			return -1;
 		default:
 			throw("Wrong emoji")
 	}
@@ -84,6 +82,10 @@ function winEmbedCtor(bet) {
 			let opt = bet.options[i];
 			Embed.addField(`${i + 1}) ${opt.content}`, '\u200B');
 		}
+		Embed.addFields(
+			{ name: `🔒`, value: replies.WinEmbedLock, inline: true},
+			{ name: `❌`, value: replies.WinEmbedDelete, inline: true},
+		);
 		return Embed;
 }
 
@@ -214,6 +216,8 @@ function addTotalBet(profile, reaction, user, bet_data, client) {
 //Refund bettor of their bet
 function refundBettors(bet) {
 	let options = bet.options;
+	if (!options)
+		return;
 	options.forEach(option => {
 		let bettors = option.bettors;
 		bettors.forEach(bettor => {
@@ -229,13 +233,17 @@ client: Bot client
 bet_id: bet's id (DB Purpose)
 */
 function declareWinners(reaction, bet, client, bet_id) {
-	let winning_choice = getChoiceByReact(reaction.emoji.name);
-	// QuickFix to know if author decided to delete prediction instead of choosing a winner
-	if (winning_choice == -1) {
+	if (reaction.emoji.name == '❌') {
 		refundBettors(bet);
 		module.exports.deletePrediction(bet, bet_id, client);
 		return;
+	} else if (reaction.emoji.name == '🔒') {
+		bet.lock = true;
+		redis.set(`bet:${bet_id}`, JSON.stringify(bet));
+		return log.info(`Bet "${bet.question}" is now locked`);
 	}
+	let winning_choice = getChoiceByReact(reaction.emoji.name);
+	// QuickFix to know if author decided to delete prediction instead of choosing a winner
 	let Embed = new Discord.MessageEmbed()
 		.setColor(config.bet.embed_color)
 		.setTitle(replies.WinnersEmbedTitle(bet))
@@ -271,11 +279,13 @@ module.exports = {
 			redis.del(`msg:money:${element}`);
 		});
 		redis.del(`bet:${bet_id}`);
-		client.channels.fetch(bet.channel_id).then(channel => {
-			channel.messages.fetch(bet.msg_id).then(msg => {
-				msg.delete();
+		try {
+			client.channels.fetch(bet.channel_id).then(channel => {
+				channel.messages.fetch(bet.msg_id).then(msg => {
+					msg.delete();
+				});
 			});
-		});
+		} catch (e) {return log.ko(e)}
 		log.info(`Bet "${bet.question}" have been sucesfully deleted from the database`);
 	},
 	// Add a new prediction in the database
@@ -286,6 +296,7 @@ module.exports = {
 	async addNewPrediction(data, message) {
 		let bet_id = uniqid(); //Time and hardware based id;
 		let bet_json = {
+			lock: false,
 			totalBet: data.totalBet, // All the bets for this prediction
 			author_id: data.author_id, // Author of the prediction
 			channel_id: data.channel_id, // Channel of the prediction (where the message is posted)
@@ -312,6 +323,7 @@ module.exports = {
 			let win_msg = await message.author.send(winEmbedCtor(bet_json));
 			addOptionsReactions(win_msg, bet_json.options_lenght);
 			win_msg.react(`❌`);
+			win_msg.react(`🔒`);
 			bet_json.msg_win_id = win_msg.id; // Id of the win panel message sent to author
 			redis.set(`msg:win:${win_msg.id}`, bet_id);
 			redis.set(`bet:${bet_id}`, JSON.stringify(bet_json)).then(
@@ -369,8 +381,15 @@ module.exports = {
 				let bet = await redis.get(`bet:${bet_data.bet_id}`);
 				if (!bet)
 					throw ("Unknown Bet");
+				bet = JSON.parse(bet);
+				if (bet.lock) {
+					reaction.message.channel.send(replies.BetLocked, {
+						tts: config.bet.tts
+					});
+					return log.warning(`Bet "${bet.question}" is lock`);
+				}
 				addTotalBet(profile, reaction, user, {
-					bet: JSON.parse(bet),
+					bet: bet,
 					bet_id: bet_data.bet_id,
 					choice: bet_data.opt_idx
 				}, client);
