@@ -16,15 +16,19 @@ exports.WalletDisplay = (balance, name) => `You have ${balance} ${name} in your 
 //Predict Message
 exports.PredictDeleteWrongAuthor = `You're not the author of the current predict`;
 exports.PredictInvalidArguments = `⚙️ Invalid Parameters!\n //predict <Question> <Choice 1>...<Choice 9> ⚙️`;
-
+exports.PredictionEmbedTitle = (bet) => `Prediction !`;
 //Bet
 exports.BetInvalideArguments = `⚙️ Invalid Parameters!\n //bet <Choice Nbr> <Sum> ⚙️`;
-exports.BetAlreadyVoted = `You have already submited your vote`;
 exports.BetInsufisantBalance = (name) => `You don't have enought ${name} for this bet`;
+exports.BetAlreadyBet = (user) => `${user.username} you already bet`;
+exports.BetEmbedTitle = (question) => `Bets for: ${question}`;
+exports.BetEmbedDesc = (option) => `You choosed "${option.content}"`;
+exports.BetEmbedWallet = `Wallet`;
+exports.BetEmbedTotalbet = `Total bet`;
 //Win
 exports.WinInvalidArguments = `⚙️ Invalid Parameters!\n //win <Choice Nbr>⚙️`;
-exports.WinningChoice = (winningChoice, totalBet, name) => `And the winner is ${winningChoice} with a total of ${totalBet} ${name}`;
-exports.Winner = (winnerName, gain, name) => `${winnerName} get ${gain} ${name}`;
+exports.WinEmbedTitle = (bet) => `Choose the winner`;
+exports.WinnersEmbedTitle = (bet) => "Prediction Winners !";
 
 //Profile Message
 exports.balanceLabel = "Balance";

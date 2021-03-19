@@ -77,7 +77,7 @@ return: Discord Embed
 function winEmbedCtor(bet) {
 	let Embed = new Discord.MessageEmbed()
 		.setColor(config.bet.embed_color)
-		.setTitle("Choose the winner")
+		.setTitle(replies.WinEmbedTitle(bet))
 		.setDescription(bet.question);
 
 		for (let i = 0; i < bet.options_lenght; i++) {
@@ -98,11 +98,11 @@ return: Discord Embed
 function bettableEmbedCtor(profile, option, question, totalbet) {
 	let Embed = new Discord.MessageEmbed()
 		.setColor(config.bet.embed_color)
-		.setTitle(`Bets: ${question}`)
-		.setDescription(`You choosed "${option.content}"`)
+		.setTitle(replies.BetEmbedTitle(question))
+		.setDescription(replies.BetEmbedDesc(option))
 		.addFields(
-			{ name: 'Wallet', value: `${profile.wallet}${config.bet.name}`, inline: true},
-			{ name: 'Total Bet', value: `${totalbet}${config.bet.name}`, inline: true},
+			{ name: replies.BetEmbedWallet, value: `${profile.wallet}${config.bet.name}`, inline: true},
+			{ name: replies.BetEmbedTotalbet, value: `${totalbet}${config.bet.name}`, inline: true},
 			{ name: '\u200B', value: '\u200B' }
 		);
 	let bettables = config.bet.bettable;
@@ -125,7 +125,9 @@ function addBettor(bet, bet_id, emoji, user, profile, client) {
 		//Check if user already bet for this prediction and leave if yes
 		if (bet.bettors[i] == user.id) {
 			client.channels.fetch(bet.channel_id).then(channel => {
-				channel.send(`@${user.username} you already bet`);
+				channel.send(replies.BetAlreadyBet(user), {
+					tts: config.bet.tts
+				});
 			});
 			return log.warning(`${user.username} already bet`);
 		}
@@ -236,7 +238,7 @@ function declareWinners(reaction, bet, client, bet_id) {
 	}
 	let Embed = new Discord.MessageEmbed()
 		.setColor(config.bet.embed_color)
-		.setTitle("Prediction Winners !")
+		.setTitle(replies.WinnersEmbedTitle(bet))
 		.setDescription(bet.options[winning_choice].content)
 	client.channels.fetch(bet.channel_id).then(channel => {
 		let winners = bet.options[winning_choice].bettors;
@@ -325,7 +327,7 @@ module.exports = {
 	predictionEmbedCtor(bet) {
 		let Embed = new Discord.MessageEmbed()
 		.setColor(config.bet.embed_color)
-		.setTitle("Prediction !")
+		.setTitle(replies.PredictionEmbedTitle(bet))
 		.setDescription(bet.question);
 
 		for (let i = 0; i < bet.options_lenght; i++) {
