@@ -19,7 +19,7 @@ Note that this bot will only run with a working [Redis](https://redis.io/) serve
 
 ## Config File
 
-```json
+```
 {
 	
 	// Get you token on https://discord.com/developers/docs/intro, and replace the placeholder with it.
