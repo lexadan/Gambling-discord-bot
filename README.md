@@ -1,6 +1,6 @@
 ﻿﻿﻿﻿
 
-# Prediction Bot
+# Gambling Bot
 
 This bot aim to create a whole gambling and prediction system on your server. As well as a basic economy.
 **Note that this bot is only available on HIY (host it yourself) yet, but give you a lot of customization options**
