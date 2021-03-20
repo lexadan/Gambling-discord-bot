@@ -104,8 +104,7 @@ function bettableEmbedCtor(profile, option, question, totalbet) {
 		.setDescription(replies.BetEmbedDesc(option))
 		.addFields(
 			{ name: replies.BetEmbedWallet, value: `${profile.wallet}${config.bet.name}`, inline: true},
-			{ name: replies.BetEmbedTotalbet, value: `${totalbet}${config.bet.name}`, inline: true},
-			{ name: '\u200B', value: '\u200B' }
+			{ name: replies.BetEmbedTotalbet, value: `${totalbet}${config.bet.name}`, inline: true}
 		);
 	let bettables = config.bet.bettable;
 	bettables.forEach(element => {
@@ -340,12 +339,11 @@ module.exports = {
 		let Embed = new Discord.MessageEmbed()
 		.setColor(config.bet.embed_color)
 		.setTitle(replies.PredictionEmbedTitle(bet))
-		.setDescription(bet.question);
-
+		.setDescription(bet.question + "\u3000".repeat(30));
 		for (let i = 0; i < bet.options_lenght; i++) {
 			let opt = bet.options[i];
 			let ratio = (opt.totalBet == 0) ? 0 : (bet.totalBet / opt.totalBet);
-			let progressbar = progressBar(opt.totalBet / bet.totalBet, 1, 15);
+			let progressbar = progressBar(((opt.totalBet == 0) ? 0 : (opt.totalBet / bet.totalBet)), 1, 20);
 			Embed.addField(`${i + 1}) ${opt.content}`, `${progressbar} ${opt.totalBet} ${config.bet.name} (1:${ratio})`);
 		}
 		return Embed;
